@@ -21,53 +21,57 @@ function crearDiv() {
 function userSelection() {}
 
 window.addEventListener("load", async function () {
-  try {
-    await wait(3000);
-    crearDiv();
-    let selection = await Promise.race([
-      waitForUserSelection(),
-      rejectOnEscape()
-    ]);
-    document.querySelector(
-      ".message"
-    ).innerText = `Seleccionaste: ${selection}`;
-  } catch (err) {
-    console.log(err);
-    document.getElementById("div-principal").remove();
+  await wait(1000);
+  crearDiv();
+  let result = await Promise.race([displaySelection(), rejectOnEscape(), unexpectedKey()]);
+  switch (result) {
+    case "unexpectedKey":
+      document.querySelector(".message").innerText = `Seleccionaste: ${result} y no es una tecla válida`;
+      break;
+    case "a":
+    case "b":
+      document.querySelector(".message").innerText = `Seleccionaste: ${result}`;
   }
-
-  // wait(3000)
-  //   .then(() => crearDiv())
-  //   .then(() => Promise.race([waitForUserSelection(), rejectOnEscape()]))
-  //   .then((selection) => {
-  //     document.querySelector(
-  //       ".message"
-  //     ).innerText = `Seleccionaste: ${selection}`;
-  //   })
-  //   .catch(() => document.getElementById("div-principal").remove());
 });
 
-function waitForUserSelection() {
+window.addEventListener("load", async function () {
+  await wait(20000);
+  document.getElementById("div-principal").remove();
+});
+
+async function rejectOnEscape() {
+  await waitForUserSelection(["Escape"]);
+  document.getElementById("div-principal").remove();
+}
+
+async function displaySelection() {
+  let selection = await waitForUserSelection(["a", "b"]);
+  return selection;
+}
+
+async function unexpectedKey() {
+  let selection = await waitForUserSelection();
+  return "unexpectedKey";
+}
+
+function waitForUserSelection(keys) {
   return new Promise((resolve) => {
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "a" || event.key === "A") {
-        console.log("A");
-        resolve("A");
-      } else if (event.key === "b" || event.key === "B") {
-        console.log("B");
-        resolve("B");
+    function efecto(event) {
+      if (!keys || keys.includes(event.key)) {
+        document.removeEventListener("keydown", efecto);
+        resolve(event.key);
       }
-    });
+    }
+    document.addEventListener("keydown", efecto);
   });
 }
 
-function rejectOnEscape() {
-  return new Promise((resolve, reject) => {
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        console.log("Escape key pressed");
-        reject("Escape key pressed");
-      }
-    });
-  });
-}
+// EJEMPLO CARGAR VINOS DESDE UNA API
+
+// async function cargaVinos() {
+//   let response = await fetch("https://api.sampleapis.com/wines/reds");
+//   let data = await response.json();
+//   return data;
+// }
+
+// console.log(await cargaVinos());
